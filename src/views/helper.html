@@ -5,21 +5,65 @@
   <title>Dare Not Bend</title>
   <link rel="stylesheet" href="../styles/starter.css">
   <link rel="stylesheet" href="../styles/helper.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+  <script type="module" src="../scripts/graph.js"></script>
 </head>
 
 <body>
-  <div class="Helper app">
-    <h1 class="Helper-title">Dare Not Bend</h1>
-    <h2 class="Helper-subtitle">ML-powered posture detection</h2>
-    <p class="Helper-desc">
-      Dare Not Bend uses your laptop's camera to analyze and help you improve your posture. Now that you have registered
-      and calibrated the system, simply keep Dare Not Bend open in the background and continue working. Dare Not Bend will
-      notify you if you begin to slouch so you can correct it. You can now close this window, and Dare Not Bend will continue
-      to help you improve your posture!
-    </p>
-    <button class="inline-button Helper-help">Help</button>
-  </div>
-  <!-- <script src="../scripts/helper.js"></script> -->
-</body>
+  
+  <h1 class="Helper-title" style="text-align: center; margin-top: 10%;">Dare Not Bend Metrics</h1>
+  <br>
+  <div style="display: flex; justify-content: center;">
+  <canvas id="myChart" style="justify-content: center; width:100%;max-width:700px"></canvas>
+</div>
+<!-- <script type="module" src="../scripts/graph.js"></script> -->
+<script type="module">
+  // import db from './process.js';
+  var xyValues = [
+  {x:50, y:7},
+  {x:60, y:8},
+  {x:70, y:8},
+  {x:80, y:9},
+  {x:90, y:9},
+  {x:100, y:9},
+  {x:110, y:10},
+  {x:120, y:11},
+  {x:130, y:14},
+  {x:140, y:14},
+  {x:150, y:15}
+];
+
+  new Chart("myChart", {
+        type: "scatter",
+        data: {
+          datasets: [{
+            pointRadius: 4,
+            pointBackgroundColor: "#F27474",
+            data: xyValues
+          }]
+        },
+        options: {
+          legend: {display: false},
+          scales: {
+            xAxes: [{ticks: {min: 40, max:160}}],
+            yAxes: [{ticks: {min: 6, max:16}}],
+          }
+        }
+      });
+  console.log(db);
+// db.find({$not: { "x": 1 } }, function (err, docs) {
+//     // docs is an array containing documents Mars, Earth, Jupiter
+//     // If no document is found, docs is equal to []
+//     const graphData = [];
+
+//     docs.map((data) => {
+//         graphData.push({x:data.x, y:data.y});
+//     })
+//     console.log(docs);
+    
+// });
+
+</script>
+ </body>
 
 </html>

@@ -8,10 +8,12 @@ const {
 	ipcMain
 } = require('electron');
 
+//You can use NeDB as an in-memory only datastore or as a persistent datastore. 
+//One datastore is the equivalent of a MongoDB collection Persistent datastore with manual loading
 const Datastore = require('nedb');
 
 const db = new Datastore({
-	filename: 'local/defaults.db'
+	filename: 'local/defaults.db',
 });
 
 function getUserData(completion) {
@@ -61,6 +63,7 @@ function loadMenuBar() {
 
 
 		mb.on('ready', () => {
+			// for creating the U icon n task bar.
             console.log(app.name);
             app.setAppUserModelId(app.name);
 			mb.tray.setImage('letter-20.png');

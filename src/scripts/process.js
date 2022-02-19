@@ -1,10 +1,21 @@
 const {
     ipcRenderer
 } = require('electron');
+const Datastore = require('nedb');
+
+const db = new Datastore({
+	filename: 'local/graph.db',
+    autoload: true
+});
+
 
 let net;
 let jsonData = {};
 let filename = "poseData.json";
+//1-> left eye
+//2-> right eye
+//5-> left shoulder
+//6-> right shoulder
 let keypointIndices = [1, 2, 5, 6];
 
 let messageList = [
@@ -31,6 +42,8 @@ let lastNotificationTime = 0;
 let notification = null;
 let firestoreData = {"slouch": false};
 let messageIndex;
+// let graph = [];
+
 
 ipcRenderer.on('userData', function (event, userData) {
     baseline = userData.baseline;
@@ -51,7 +64,8 @@ function getRatio(pose) {
 }
 
 function getSlouchConfidence(pose) {
-    let confidenceOfSlouch = 1;
+    //!!!!!!!!!!!!!!!!!!
+    let confidenceOfSlouch = 1; //Confidence defines the probability of event. It's bw 0 and 1.
     for (let i = 0; i < keypointIndices.length; ++i) {
         confidenceOfSlouch = Math.min(confidenceOfSlouch, pose["keypoints"][keypointIndices[i]]["score"]);
     }
@@ -59,6 +73,11 @@ function getSlouchConfidence(pose) {
 }
 
 async function getBaseline(image, completion) {
+    //Single pose estimation is the simpler and faster of the two algorithms. 
+    //Its ideal use case is for when there is only one person in the image. The disadvantage is that 
+    //if there are multiple persons in an image, keypoints from both persons will likely be estimated 
+    //as being part of the same single pose—meaning, for example, that person #1’s left arm and 
+    //person #2’s right knee might be conflated by the algorithm as belonging to the same pose.
     let pose = await net.estimateSinglePose(image);
     let confidenceOfSlouch = getSlouchConfidence(pose);
 
@@ -75,6 +94,9 @@ async function getBaseline(image, completion) {
 function computeBaseline(stream, completion) {
     const track = stream.getVideoTracks()[0];
     let imageCapture = new ImageCapture(track);
+
+    //The grabFrame() method of the ImageCapture interface takes a snapshot of the live video in a 
+    //MediaStreamTrack and returns a Promise that resolves with a ImageBitmap containing the snapshot.
     imageCapture.grabFrame().then(imageBitmap => {
         getBaseline(imageBitmap, completion);
     }).catch(err => console.error('Compute baseline failed: ', err));
@@ -90,6 +112,7 @@ async function startup() {
 }
 
 async function estimate(image, interval) {
+    console.log("Function hit");
     let pose = await net.estimateSinglePose(image);
     let confidenceOfSlouch = getSlouchConfidence(pose);
     let time = new Date();
@@ -111,6 +134,7 @@ async function estimate(image, interval) {
     let ratio = getRatio(pose);
     let percentSlouch = 0;
     lastPostureTime = time.getTime();
+    
 
     percentSlouch = Math.max(Math.abs((ratio - baseline * (1 + sensitivity))),
         Math.abs((baseline * (1 - sensitivity) - ratio))) * 1000;
@@ -148,15 +172,26 @@ async function estimate(image, interval) {
     console.log(percentSlouch + "% slouch");
 
     let slouchData = {
-        "slouch-confidence": confidenceOfSlouch,
-        "slouch-percent": percentSlouch,
-        "time": time.getTime()
+        // "slouch-confidence": confidenceOfSlouch,
+        // "slouch-percent": percentSlouch,
+        // "time": time.getTime()
+        'x': time.getTime(),
+        'y': percentSlouch
     };
+    console.log(slouchData);
+    db.insert(slouchData);
+    console.log(db);
+    // graph.push(slouchData);
+    console.log("--------------------------------")
+    // console.log(graph);
 
     firestoreData = {"uid": UID, "data": slouchData, "slouch": true};
 }
 
+
+//data = stream, interval = imageInterval = 3000 (called from camera.js)
 function process(data, interval) {
+
     const track = data.getVideoTracks()[0];
     let imageCapture = new ImageCapture(track);
     imageCapture.grabFrame().then(imageBitmap => {
@@ -187,7 +222,8 @@ function writeToFile(document, window) {
 startup();
 
 export {
+    db,
     process,
     writeToFile,
-    computeBaseline
+    computeBaseline,
 }
