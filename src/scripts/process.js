@@ -7,6 +7,10 @@ const db = new Datastore({
 	filename: 'local/graph.db',
     autoload: true
 });
+const baselineDb = new Datastore({
+	filename: 'local/baseline.db',
+    autoload: true
+});
 
 
 let net;
@@ -43,11 +47,14 @@ let notification = null;
 let firestoreData = {"slouch": false};
 let messageIndex;
 // let graph = [];
+let i=0; //added
 
 
 ipcRenderer.on('userData', function (event, userData) {
     baseline = userData.baseline;
     UID = userData.uid;
+    var bs=baseline*100;
+    baselineDb.insert({"baseline":bs});
 });
 
 function getRatio(pose) {
@@ -88,6 +95,7 @@ async function getBaseline(image, completion) {
     }
 
     baseline = getRatio(pose);
+  
     completion(baseline);
 }
 
@@ -171,15 +179,24 @@ async function estimate(image, interval) {
 
     console.log(percentSlouch + "% slouch");
 
+    let currTime=time.toTimeString().split(":");
+    let hour=Number(currTime[0]);
+    let minute=Number(currTime[1])/60;
+    let plotTime=hour+minute;
+
     let slouchData = {
         // "slouch-confidence": confidenceOfSlouch,
         // "slouch-percent": percentSlouch,
         // "time": time.getTime()
-        'x': time.getTime(),
+        // 'x': time.getTime(),
+        'x':plotTime,
         'y': percentSlouch
     };
     console.log(slouchData);
-    db.insert(slouchData);
+     i++;
+    if(i%20==0) db.insert(slouchData);
+   
+
     console.log(db);
     // graph.push(slouchData);
     console.log("--------------------------------")
@@ -223,6 +240,7 @@ startup();
 
 export {
     db,
+    baselineDb,
     process,
     writeToFile,
     computeBaseline,
